@@ -1,0 +1,24 @@
+30.10.2020 [rm_app.cpp:858]Initialisierung von infoSendObjno korrigiert (für den normalen zeitlichen Ablauf seit Beginn des Programms)
+30.10.2020 [rm_app.cpp:162]Initialisierung von eventTime korrigiert (für den normalen zeitlichen Ablauf seit Beginn des Programms)
+30.10.2020 [rm_app.cpp:759] die Pause zwischen den zu sendenden Status Objekten auf 2 Sekunden reduziert (war 4), da 16 Status Objekte innerhalb einer Minute (kleinste Einstellung) angehandelt werden müssen; vorher wurde Object 6 (Seriennummer) nicht erreicht
+
+31.10.2020 [rm_app.cpp:305] Wertzuweisung von alarmLocal nach Aufruf von send_obj_alarm notwendig, da sonst kein Alarm Objekt versendet wird
+31.10.2020 [rm_app.cpp:310] Wertzuweisung von testAlarmLocal nach Aufruf von send_obj_test_alarm notwendig, da sonst kein TestAlarm Objekt versendet wird
+31.10.2020 [rm_app.cpp:191,192] den Wert newalarm versenden, da der Wert von alarmLocal noch alt ist
+31.10.2020 [rm_app.cpp:206,207] den Wert newalarm versenden, da der Wert von testAlarmLocal noch alt ist
+
+01.11.2020 [rm_app.cpp:192] objectSetValue von Status Alarm zu objectWrite getauscht, da der Status bei Alarm gesendet werden soll 
+01.11.2020 [rm_app.cpp:207] objectSetValue von Status TestAlarm zu objectWrite getauscht, da der Status bei TestAlarm gesendet werden soll 
+01.11.2020 [rm_app.cpp:336-350] Abfrage Taster am Rauchmelder gedrückt auskommentiert -> Begründung siehe Quelltext
+01.11.2020 [rm_app.cpp:
+01.11.2020 [rm_app.cpp:
+
+Idee: ab process_objs alles wegsperren, zyklische Abfrage aller Werte im Timer
+
+514 + 526 prüfen! -> OK
+
+
+
+Abfrage von Objektwerten durch lesen nicht möglich
+
+rm_process_msg -> mapping auf com objekt machen und objectSetValue() durchführen 
