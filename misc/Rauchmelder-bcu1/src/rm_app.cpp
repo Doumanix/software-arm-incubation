@@ -10,7 +10,7 @@
  *  Copyright (c) 2013 Stefan Taferner <stefan.taferner@gmx.at>
  *
  *  Modified for LPC1115 ARM processor:
- *  Copyright (c) 2017 Oliver Stefan <o.stefan252@googlemail.com>
+ *  Copyright (c) 2017-2020 Oliver Stefan <o.stefan252@googlemail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -158,8 +158,11 @@ unsigned char infoCounter;
 // Nummer des Com-Objekts das bei zyklischem Info Senden als nächstes geprüft/gesendet wird
 unsigned char infoSendObjno;
 
+// Nummer des Befehls, welcher als nächtes zyklisch an den Rauchmelder gesendet wird
+unsigned char readCmdno;
+
 // Halbsekunden Zähler 0..119
-unsigned char eventTime = 0;
+unsigned char eventTime = 120; //Initialisierung auf 1 Minute (sonst wird im Timer Interrupt 0 minus 1 durchgeführt)
 
 
 // Tabelle für 1<<x, d.h. pow2[3] == 1<<3
@@ -188,8 +191,8 @@ void send_obj_alarm(bool newAlarm)
 {
 	if (alarmLocal != newAlarm)
 	{
-		objectWrite(OBJ_ALARM_BUS, read_obj_value(OBJ_ALARM_BUS));
-		objectSetValue(OBJ_STAT_ALARM, read_obj_value(OBJ_STAT_ALARM));
+		objectWrite(OBJ_ALARM_BUS, newAlarm);
+		objectWrite(OBJ_STAT_ALARM, newAlarm);
 	}
 }
 
@@ -203,8 +206,8 @@ void send_obj_test_alarm(bool newAlarm)
 {
 	if (testAlarmLocal != newAlarm)
 	{
-		objectWrite(OBJ_TALARM_BUS, read_obj_value(OBJ_TALARM_BUS));
-		objectSetValue(OBJ_STAT_TALARM, read_obj_value(OBJ_STAT_TALARM));
+		objectWrite(OBJ_TALARM_BUS, newAlarm);
+		objectWrite(OBJ_STAT_TALARM, newAlarm);
 	}
 }
 
@@ -266,7 +269,7 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 			for( unsigned char lencnt = 1; lencnt<len; lencnt++ ){
 				objValues[cmd] |= (bytes[lencnt] << ((lencnt-1)*8));
 			}
-			//objValues[cmd] = *(unsigned long*)(bytes + 1); // führt zu HardFault uf ARM Controller!!!!
+			// vorher: objValues[cmd] = *(unsigned long*)(bytes + 1); // führt zu HardFault uf ARM Controller!!!!
 
 			cmdCurrent = RM_CMD_NONE;
 
@@ -302,15 +305,13 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 
 		// Lokaler Alarm: Rauch Alarm | Temperatur Alarm | Wired Alarm
 		newAlarm = (subType & 0x10) | (status & (0x04 | 0x08));
-		alarmLocal = newAlarm;
 		send_obj_alarm(newAlarm);
-
+		alarmLocal = newAlarm;
 
 		// Lokaler Testalarm: (lokaler) Testalarm || Wired Testalarm
 		newAlarm = status & (0x20 | 0x40);
-		testAlarmLocal = newAlarm;
 		send_obj_test_alarm(newAlarm);
-
+		testAlarmLocal = newAlarm;
 
 		// Bus Alarm
 		alarmBus = status & 0x10;
@@ -322,20 +323,34 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 		if ((status ^ errCode) & ERRCODE_BATLOW)
 			set_errcode((errCode & ~ERRCODE_BATLOW) | (status & ERRCODE_BATLOW));
 
+
+		/*
+		* folgende Passage ist für mich nicht nachvollziehbar:
+		* Es wird kontrolliert, ob die Taste am Rauchmelder gedrückt wurde, anschließend wir überprüft, ob ein Alarm oder TestAlarm vom Bus vorliegt
+		* Dann wird der jeweilige Status versendet.
+		* für welchen Anwendungfall ist dieses sinnvoll?
+		* zur Zeit wird vom lokalen Rauchmelder der setAlarmBus ausgelöst (quasi local loopback) und die Tastenerkennung löst aus
+		* Somit wird die Status Nachricht EIN 2x versendet (1x aus send_obj_alarm bzw. send_obj_test_alarm) und einmal hier.
+		* AUS wird hier allerdings nicht versendet, da setAlarmBus bzw. setTestAlarmBus dann false sind
+		*
+		* Daher habe ich mich entschieden, diese Versendung vorerst zu deaktivieren
+		*/
+
 		if (subType & 0x08)  // Taste am Rauchmelder gedrückt
 		{
-			if (setAlarmBus)
+			if (setAlarmBus) //wenn Alarm auf Bus anliegt
 			{
 				setAlarmBus = 0;
-				objectWrite(OBJ_STAT_ALARM, read_obj_value(OBJ_STAT_ALARM));
+				//objectWrite(OBJ_STAT_ALARM, read_obj_value(OBJ_STAT_ALARM));
 			}
 
-			if (setTestAlarmBus)
+			if (setTestAlarmBus) //wenn Testalarm auf Bus anliegt
 			{
 				setTestAlarmBus = 0;
-				objectWrite(OBJ_STAT_TALARM, read_obj_value(OBJ_STAT_TALARM));
+				//objectWrite(OBJ_STAT_TALARM, read_obj_value(OBJ_STAT_TALARM));
 			}
 		}
+
 
 		if (subType & 0x02)  // Defekt am Rauchmelder
 		{
@@ -458,8 +473,12 @@ unsigned long read_obj_value(unsigned char objno)
 		unsigned long lval;
 		unsigned char* answer;
 
-		if (cmd == cmdCurrent) answer = (unsigned char*) &objValueCurrent;
-		else answer = (unsigned char*) &objValues[cmd];
+		if (cmd == cmdCurrent) {
+			answer = (unsigned char*) &objValueCurrent;
+		}
+		else {
+			answer = (unsigned char*) &objValues[cmd];
+		}
 		answer += objMappingTab[objno].offset;
 
 		switch (objMappingTab[objno].dataType)
@@ -543,6 +562,16 @@ void objectUpdated(int objno)
 	}
 }
 
+void send_Cmd(unsigned char cmd){
+	// Den Wert des Com-Objekts vom Rauchmelder anfordern. Der Versand erfolgt
+	// wenn die Antwort vom Rauchmelder erhalten wurde, in process_msg().
+	if (recvCount < 0)
+	{
+		rm_send_cmd(CmdTab[cmd]);
+		answerWait = INITIAL_ANSWER_WAIT;
+	}
+}
+
 /**
  * Ein Com-Objekt bearbeiten.
  *
@@ -572,13 +601,7 @@ void process_obj(unsigned char objno)
 	}
 	else
 	{
-		// Den Wert des Com-Objekts vom Rauchmelder anfordern. Der Versand erfolgt
-		// wenn die Antwort vom Rauchmelder erhalten wurde, in process_msg().
-		if (recvCount < 0)
-		{
-			rm_send_cmd(CmdTab[cmd]);
-			answerWait = INITIAL_ANSWER_WAIT;
-		}
+		send_Cmd(cmd);
 	}
 }
 
@@ -753,9 +776,10 @@ extern "C" void TIMER32_0_IRQHandler()
 		}
 	}
 
-	// Jede vierte Sekunde ein Status Com-Objekt senden.
+	// Jede zweite Sekunde ein Status Com-Objekt senden.
+	// (Vormals war es jede 4. Sekunde, aber dann reicht 1 Minute nicht für 16 eventuell zu sendende Status Objekte (ComOject 6 - 21))
 	// Aber nur senden wenn kein Alarm anliegt.
-	if ((eventTime & 7) == 0 && infoSendObjno &&
+	if ((eventTime & 3) == 0 && infoSendObjno &&
 	    !(alarmLocal | alarmBus | testAlarmLocal | testAlarmBus))
 	{
 		// Info Objekt zum Senden vormerken wenn es dafür konfiguriert ist.
@@ -769,6 +793,18 @@ extern "C" void TIMER32_0_IRQHandler()
 		--infoSendObjno;
 	}
 
+	// alle 8 Sekunden einen der 6 Befehle an den Rauchmelder senden, um alle Daten aus dem Rauchmelder abzufragen
+	// notwendig, da die ARM sblib keine Funktion aufruft, wenn ein Objekt ausgelesen wird
+	// daher müssen alle Informationen immer im Speicher vorliegen
+	if((eventTime & 16) == 0 && readCmdno &&
+			!(alarmLocal | alarmBus | testAlarmLocal | testAlarmBus))
+	{
+		if (!answerWait){
+			send_Cmd(readCmdno);
+			readCmdno--;
+		}
+	}
+
 	if (!eventTime) // einmal pro Minute
 	{
 		eventTime = 120;
@@ -776,6 +812,10 @@ extern "C" void TIMER32_0_IRQHandler()
 		// Bus Alarm ignorieren Flag rücksetzen wenn kein Alarm mehr anliegt
 		if (ignoreBusAlarm & !(alarmBus | testAlarmBus))
 			ignoreBusAlarm = 0;
+
+		if(!readCmdno){
+			readCmdno = RM_CMD_COUNT;
+		}
 
 		// Status Informationen zyklisch senden
 		if (userEeprom[CONF_SEND_ENABLE] & CONF_ENABLE_INFO_INTERVAL)
@@ -846,7 +886,8 @@ void initApplication()
 	setTestAlarmBus = 0;
 	ignoreBusAlarm = 0;
 
-	infoSendObjno = 0;
+	infoSendObjno = OBJ_HIGH_INFO_SEND; //vormals 0, bei 0 muss beim Start erst eine Minute gewartet wrden, bis korrekt Initialisiert wird
+	readCmdno = RM_CMD_COUNT;
 	infoCounter = 1;
 	alarmCounter = 1;
 	TalarmCounter = 1;
