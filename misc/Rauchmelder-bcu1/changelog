@@ -1,24 +1,18 @@
-30.10.2020 [rm_app.cpp:858]Initialisierung von infoSendObjno korrigiert (für den normalen zeitlichen Ablauf seit Beginn des Programms)
-30.10.2020 [rm_app.cpp:162]Initialisierung von eventTime korrigiert (für den normalen zeitlichen Ablauf seit Beginn des Programms)
-30.10.2020 [rm_app.cpp:759] die Pause zwischen den zu sendenden Status Objekten auf 2 Sekunden reduziert (war 4), da 16 Status Objekte innerhalb einer Minute (kleinste Einstellung) angehandelt werden müssen; vorher wurde Object 6 (Seriennummer) nicht erreicht
+30.10.2020 [rm_app.cpp] Initialisierung von infoSendObjno korrigiert (für den normalen zeitlichen Ablauf seit Beginn des Programms)
+30.10.2020 [rm_app.cpp] Initialisierung von eventTime korrigiert (für den normalen zeitlichen Ablauf seit Beginn des Programms)
+30.10.2020 [rm_app.cpp] in TIMER32_0_IRQHandler(): die Pause zwischen den zu sendenden Status Objekten auf 2 Sekunden reduziert (war 4), da 16 Status Objekte innerhalb einer Minute (kleinste Einstellung) angehandelt werden müssen; vorher wurde Object 6 (Seriennummer) nicht erreicht
 
-31.10.2020 [rm_app.cpp:305] Wertzuweisung von alarmLocal nach Aufruf von send_obj_alarm notwendig, da sonst kein Alarm Objekt versendet wird
-31.10.2020 [rm_app.cpp:310] Wertzuweisung von testAlarmLocal nach Aufruf von send_obj_test_alarm notwendig, da sonst kein TestAlarm Objekt versendet wird
-31.10.2020 [rm_app.cpp:191,192] den Wert newalarm versenden, da der Wert von alarmLocal noch alt ist
-31.10.2020 [rm_app.cpp:206,207] den Wert newalarm versenden, da der Wert von testAlarmLocal noch alt ist
+31.10.2020 [rm_app.cpp] Wertzuweisung von alarmLocal nach Aufruf von send_obj_alarm notwendig, da sonst kein Alarm Objekt versendet wird
+31.10.2020 [rm_app.cpp] Wertzuweisung von testAlarmLocal nach Aufruf von send_obj_test_alarm notwendig, da sonst kein TestAlarm Objekt versendet wird
+31.10.2020 [rm_app.cpp] den Wert newalarm in send_obj_alarm() versenden, da der Wert von alarmLocal noch alt ist
+31.10.2020 [rm_app.cpp] den Wert newalarm in send_obj_test_alarm() versenden, da der Wert von testAlarmLocal noch alt ist
 
-01.11.2020 [rm_app.cpp:192] objectSetValue von Status Alarm zu objectWrite getauscht, da der Status bei Alarm gesendet werden soll 
-01.11.2020 [rm_app.cpp:207] objectSetValue von Status TestAlarm zu objectWrite getauscht, da der Status bei TestAlarm gesendet werden soll 
-01.11.2020 [rm_app.cpp:336-350] Abfrage Taster am Rauchmelder gedrückt auskommentiert -> Begründung siehe Quelltext
-01.11.2020 [rm_app.cpp:
-01.11.2020 [rm_app.cpp:
+01.11.2020 [rm_app.cpp] in send_obj_alarm(): objectSetValue von Status Alarm zu objectWrite getauscht, da der Status bei Alarm gesendet werden soll (laut Wiki)
+01.11.2020 [rm_app.cpp] in send_obj_test_alarm(): objectSetValue von Status TestAlarm zu objectWrite getauscht, da der Status bei TestAlarm gesendet werden soll (laut Wiki)
+01.11.2020 [rm_app.cpp] in rm_process_msg(): Versendung der Status Nachrichten Alarm und Testalarm bei gedrückter Taste deaktiviert -> Sinn nicht erkannt
 
-Idee: ab process_objs alles wegsperren, zyklische Abfrage aller Werte im Timer
-
-514 + 526 prüfen! -> OK
-
-
-
-Abfrage von Objektwerten durch lesen nicht möglich
-
-rm_process_msg -> mapping auf com objekt machen und objectSetValue() durchführen 
+02.11.2020 [rm_app.cpp] in TIMER32_0_IRQHandler(): die Versendung der Befehle an den Rauchmelder minütlich eingefügt, um alle Daten immer aktuell im Speicher zu haben
+02.11.2020 [rm_app.cpp] CmdTab um die korresponierenden ComObjekte erweitert. Somit ist eine Zuordnung der empfangenen Daten zu ComObjekten möglich.
+02.11.2020 [rm_app.cpp] in rm_process_msg(): die empfangenen Daten werden den ComObjekten zugeordnet und in den Speicher der sblib übergeben (notwendig bei der sblib für Status Abfrage über KNX per GroupValueRead)
+						dafür wurde die Versendung der Befehle an den Rauchmelder aus process_obj() entfernt, da alle Daten immer aktuell vorliegen (max. 1 Minute alt)
+						Befürchtung: durch häufiges Abfragen des Status entleert sich die Batterie des Rauchmelders schneller? -> keine Idee, wie anders zu lösen

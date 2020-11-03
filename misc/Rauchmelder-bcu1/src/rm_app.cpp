@@ -27,6 +27,7 @@
 
 
 // Befehle an den Rauchmelder
+/*
 const unsigned char CmdTab[RM_CMD_COUNT] =
 {
 	0x04,   // RM_CMD_SERIAL
@@ -34,9 +35,25 @@ const unsigned char CmdTab[RM_CMD_COUNT] =
 	0x0B,   // RM_CMD_SMOKEBOX
 	0x0C,   // RM_CMD_BATTEMP
 	0x0D,   // RM_CMD_NUM_ALARMS
-	0x0E	// RM_CMD_NUM_TEST_ALARMS
+	0x0E	// RM_CMD_NUM_ALARMS_2
 };
+*/
 
+
+
+const struct
+{
+	unsigned const char cmdno;      // Zu sendender RM_CMD Befehl
+	unsigned const char objects[MAX_OBJ_CMD];	// Zuordnung der ComObjekte zu den Befehlen
+} CmdTab[RM_CMD_COUNT] =
+{
+	{ 0x04, {6,  0xFF, 0xFF, 0xFF} },	// RM_CMD_SERIAL
+	{ 0x09, {7,  0xFF, 0xFF, 0xFF} },	// RM_CMD_OPERATING_TIME
+	{ 0x0B, {8,  9,    15,   0xFF} },	// RM_CMD_SMOKEBOX
+	{ 0x0C, {10, 11,   0xFF, 0xFF} }, 	// RM_CMD_BATTEMP
+	{ 0x0D, {16, 17,   18,   19} },		// RM_CMD_NUM_ALARMS
+	{ 0x0E, {20, 21,   0xFF, 0xFF} } 	// RM_CMD_NUM_ALARMS_2
+};
 
 // Mapping von den Kommunikations-Objekten auf die Rauchmelder Requests
 // und die Daten in der Rauchmelder Antwort. Der Index in die Tabelle ist
@@ -96,10 +113,6 @@ bool ignoreBusAlarm;
 
 // Rauchmelder Fehlercodes
 unsigned char errCode;
-
-
-// Flags für Com-Objekte lesen
-unsigned char objReadReqFlags[NUM_OBJ_FLAG_BYTES];
 
 // Flags für Com-Objekte senden
 unsigned char objSendReqFlags[NUM_OBJ_FLAG_BYTES];
@@ -255,7 +268,7 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 
 		for (cmd = 0; cmd < RM_CMD_COUNT; ++cmd)
 		{
-			if (CmdTab[cmd] == msgType)
+			if (CmdTab[cmd].cmdno == msgType)
 				break;
 		}
 
@@ -272,20 +285,20 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 			// vorher: objValues[cmd] = *(unsigned long*)(bytes + 1); // führt zu HardFault uf ARM Controller!!!!
 
 			cmdCurrent = RM_CMD_NONE;
-
-			// Versand der erhaltenen Com-Objekte einleiten. Dazu alle Com-Objekte suchen
-			// auf die die empfangenen Daten passen und diese senden. Sofern sie für
-			// den Versand vorgemerkt sind.
-			for (objno = 0; objno < NUM_OBJS; ++objno, mask <<= 1)
+			
+			// Informationen aus den empfangenen Daten vom Rauchmelder der sblib zur Verfügung stellen
+			// Dazu alle Com-Objekte suchen auf die die empfangenen Daten passen (mapping durch CmdTab)
+			// notwendig für den Abruf von Informationen über KNX aus den Status Objekten (GroupValueRead -> GroupValueResponse)
+			for(unsigned char cmdObj_cnt=0; CmdTab[cmd].objects[cmdObj_cnt] != 0xFF && cmdObj_cnt < MAX_OBJ_CMD; cmdObj_cnt++)
 			{
+				unsigned char objno = CmdTab[cmd].objects[cmdObj_cnt];
+				objectSetValue(objno, read_obj_value(objno));
+
+				// Versand der erhaltenen Com-Objekte einleiten.  Sofern sie für
+				// den Versand vorgemerkt sind.
 				byteno = objno >> 3;
 				mask = pow2[objno & 7];
 
-				if (objReadReqFlags[byteno] & mask)
-				{
-					//send_obj_value(objno | OBJ_RESPONSE_FLAG);  //TODO: wird hier noch reingesprungen? -> neue Lib macht read-requests selbstständig?!
-					objReadReqFlags[byteno] &= ~mask;
-				}
 				if (objSendReqFlags[byteno] & mask)
 				{
 					objectWrite(objno, read_obj_value(objno));
@@ -321,11 +334,19 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 
 		// Batterie schwach/leer
 		if ((status ^ errCode) & ERRCODE_BATLOW)
+		{
 			set_errcode((errCode & ~ERRCODE_BATLOW) | (status & ERRCODE_BATLOW));
+			
+			// Werte für OBJ_ERRCODE (Objekt 12), OBJ_BAT_LOW (Objekt 13) und OBJ_MALFUNCTION (Objekt 14) für die sblib zur Verfügung stellen
+			// notwendig für den Abruf von Informationen über KNX aus den Status Objekten (GroupValueRead -> GroupValueResponse)
+			for(unsigned char objno=12; objno<=14; objno++){
+				objectSetValue(objno, read_obj_value(objno));
+			}
+		}
 
 
 		/*
-		* folgende Passage ist für mich nicht nachvollziehbar:
+		* In der folgenden Passage ist für mich die Versendung der Objekte nicht nachvollziehbar:
 		* Es wird kontrolliert, ob die Taste am Rauchmelder gedrückt wurde, anschließend wir überprüft, ob ein Alarm oder TestAlarm vom Bus vorliegt
 		* Dann wird der jeweilige Status versendet.
 		* für welchen Anwendungfall ist dieses sinnvoll?
@@ -369,15 +390,6 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 		}
 	}
 }
-
-
-/**
- * Empfangenes read_value_request Telegramm verarbeiten.
- */
-/*void read_value_req(unsigned char objno)		// das lesen aus dem Rauchmelder wird von der neuen Lib selbstständig behandelt?!
-{
-	ARRAY_SET_BIT(objReadReqFlags, objno);
-}*/
 
 
 /**
@@ -562,12 +574,16 @@ void objectUpdated(int objno)
 	}
 }
 
+/**
+ * Befehl an den Rauchmelder versenden
+ * Der Empfang und die Verarbeitung der Antwort des Raucmelders derfolgt in process_msg().
+ *
+ * @param cmd - Index des zu sendenden Befehls aus der CmdTab
+ */
 void send_Cmd(unsigned char cmd){
-	// Den Wert des Com-Objekts vom Rauchmelder anfordern. Der Versand erfolgt
-	// wenn die Antwort vom Rauchmelder erhalten wurde, in process_msg().
 	if (recvCount < 0)
 	{
-		rm_send_cmd(CmdTab[cmd]);
+		rm_send_cmd(CmdTab[cmd].cmdno);
 		answerWait = INITIAL_ANSWER_WAIT;
 	}
 }
@@ -581,27 +597,16 @@ void process_obj(unsigned char objno)
 {
 	unsigned char cmd = objMappingTab[objno].cmd;
 
-	if (cmd == RM_CMD_NONE || cmd == RM_CMD_INTERNAL)
-	{
-		// Der Wert des Com-Objekts ist bekannt, also sofort senden
+	// Der Wert des Com-Objekts ist bekannt, also sofort senden
+	//Die Werte werden zyklisch (minütlich) alle vom Rauchmelder abgefragt, daher sind immer alle Werte aktuell vorhanden
 
-		unsigned char byteno = objno >> 3;
-		unsigned char mask = pow2[objno & 7];
+	unsigned char byteno = objno >> 3;
+	unsigned char mask = pow2[objno & 7];
 
-		if (objReadReqFlags[byteno] & mask)
-		{
-			//send_obj_value(objno | OBJ_RESPONSE_FLAG); //TODO: wird hier noch reingesprungen? -> neue Lib handelt read requests selber ab?!
-			objReadReqFlags[byteno] &= ~mask;
-		}
-		if (objSendReqFlags[byteno] & mask)
-		{
-			objectWrite(objno, read_obj_value(objno));
-			objSendReqFlags[byteno] &= ~mask;
-		}
-	}
-	else
+	if (objSendReqFlags[byteno] & mask)
 	{
-		send_Cmd(cmd);
+		objectWrite(objno, read_obj_value(objno));
+		objSendReqFlags[byteno] &= ~mask;
 	}
 }
 
@@ -646,10 +651,7 @@ unsigned char do_process_objs(unsigned char *flags)
  */
 void process_objs()
 {
-	if (do_process_objs(objReadReqFlags))
-		return;
-
-	do_process_objs(objSendReqFlags); //TODO: kontrollieren, ob hier reingesprungen wird (vorher if Bedingung false)
+	do_process_objs(objSendReqFlags);
 }
 
 
@@ -793,15 +795,15 @@ extern "C" void TIMER32_0_IRQHandler()
 		--infoSendObjno;
 	}
 
-	// alle 8 Sekunden einen der 6 Befehle an den Rauchmelder senden, um alle Daten aus dem Rauchmelder abzufragen
+	// alle 8 Sekunden einen der 6 Befehle aus der CmdTab an den Rauchmelder senden, um alle Status Daten aus dem Rauchmelder abzufragen
 	// notwendig, da die ARM sblib keine Funktion aufruft, wenn ein Objekt ausgelesen wird
 	// daher müssen alle Informationen immer im Speicher vorliegen
-	if((eventTime & 16) == 0 && readCmdno &&
+	if((eventTime & 15) == 0 && readCmdno &&
 			!(alarmLocal | alarmBus | testAlarmLocal | testAlarmBus))
 	{
 		if (!answerWait){
-			send_Cmd(readCmdno);
 			readCmdno--;
+			send_Cmd(readCmdno);
 		}
 	}
 
@@ -864,7 +866,6 @@ void initApplication()
 
 	for (i = 0; i < NUM_OBJ_FLAG_BYTES; ++i)
 	{
-		objReadReqFlags[i] = 0;
 		objSendReqFlags[i] = 0;
 	}
 
@@ -886,7 +887,7 @@ void initApplication()
 	setTestAlarmBus = 0;
 	ignoreBusAlarm = 0;
 
-	infoSendObjno = OBJ_HIGH_INFO_SEND; //vormals 0, bei 0 muss beim Start erst eine Minute gewartet wrden, bis korrekt Initialisiert wird
+	infoSendObjno = OBJ_HIGH_INFO_SEND;
 	readCmdno = RM_CMD_COUNT;
 	infoCounter = 1;
 	alarmCounter = 1;
