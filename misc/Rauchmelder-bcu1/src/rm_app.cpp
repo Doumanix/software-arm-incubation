@@ -515,7 +515,7 @@ unsigned long read_obj_value(unsigned char objno)
 			lval = ((int) answer[0]) + answer[1];
 			lval *= 25;  // in lval sind zwei Temperaturen, daher halber Multiplikator
 			lval -= 2000;
-			lval += (char)userEeprom[CONF_TEMP_OFFSET] *10;  // Temperaturabgleich
+			lval += (signed char)userEeprom[CONF_TEMP_OFFSET] *10;  // Temperaturabgleich
 			return conv_dpt_9_001(lval);
 
 		case RM_TYPE_MVOLT:
