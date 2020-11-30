@@ -39,8 +39,6 @@ const unsigned char CmdTab[RM_CMD_COUNT] =
 };
 */
 
-
-
 const struct
 {
 	unsigned const char cmdno;      // Zu sendender RM_CMD Befehl
@@ -199,15 +197,16 @@ const unsigned char pow2[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
  * Den Alarm Status auf den Bus senden falls noch nicht gesendet.
  *
  * @param newAlarm - neuer Alarm Status
- */
+ *//*
 void send_obj_alarm(bool newAlarm)
 {
 	if (alarmLocal != newAlarm)
 	{
 		objectWrite(OBJ_ALARM_BUS, newAlarm);
+		if()
 		objectWrite(OBJ_STAT_ALARM, newAlarm);
 	}
-}
+}*/
 
 
 /**
@@ -282,7 +281,7 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 			for( unsigned char lencnt = 1; lencnt<len; lencnt++ ){
 				objValues[cmd] |= (bytes[lencnt] << ((lencnt-1)*8));
 			}
-			// vorher: objValues[cmd] = *(unsigned long*)(bytes + 1); // führt zu HardFault uf ARM Controller!!!!
+			// vorher: objValues[cmd] = *(unsigned long*)(bytes + 1); // führt zu HardFault auf ARM Controller!!!!
 
 			cmdCurrent = RM_CMD_NONE;
 			
@@ -294,8 +293,8 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 				unsigned char objno = CmdTab[cmd].objects[cmdObj_cnt];
 				objectSetValue(objno, read_obj_value(objno));
 
-				// Versand der erhaltenen Com-Objekte einleiten.  Sofern sie für
-				// den Versand vorgemerkt sind.
+				// Versand der erhaltenen Com-Objekte einleiten.
+				// Sofern sie für den Versand vorgemerkt sind.
 				byteno = objno >> 3;
 				mask = pow2[objno & 7];
 
@@ -318,7 +317,20 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 
 		// Lokaler Alarm: Rauch Alarm | Temperatur Alarm | Wired Alarm
 		newAlarm = (subType & 0x10) | (status & (0x04 | 0x08));
-		send_obj_alarm(newAlarm);
+		if ((userEeprom[CONF_SEND_ENABLE] & CONF_ENABLE_ALARM_DELAYED) && newAlarm) // wenn Alarm verzögert gesendet werden soll und Alarm ansteht
+		{
+			delayedAlarmCounter = userEeprom[CONF_ALARM_DELAYED];
+			objectSetValue(OBJ_STAT_ALARM_DELAYED, read_obj_value(OBJ_STAT_ALARM_DELAYED));
+		}
+		else if (alarmLocal != newAlarm)//wenn Alarm nicht verzögert gesendet werden soll oder Alarm nicht mehr ansteht (nur 1x senden)
+		{
+			objectWrite(OBJ_ALARM_BUS, newAlarm);
+		}
+
+		if (alarmLocal != newAlarm){ //sobald neuer AlarmStaus ansteht, soll dieser versendet werden
+			objectWrite(OBJ_STAT_ALARM, newAlarm);
+		}
+
 		alarmLocal = newAlarm;
 
 		// Lokaler Testalarm: (lokaler) Testalarm || Wired Testalarm
@@ -362,6 +374,7 @@ void rm_process_msg(unsigned char* bytes, unsigned char len)
 			if (setAlarmBus) //wenn Alarm auf Bus anliegt
 			{
 				setAlarmBus = 0;
+				delayedAlarmCounter = 0; // verzögerten Alarm abbrechen
 				//objectWrite(OBJ_STAT_ALARM, read_obj_value(OBJ_STAT_ALARM));
 			}
 
@@ -725,8 +738,11 @@ extern "C" void TIMER32_0_IRQHandler()
 			--delayedAlarmCounter;
 			if (!delayedAlarmCounter)   // Verzögerungszeit abgelaufen
 			{
-				ARRAY_SET_BIT(objSendReqFlags, OBJ_ALARM_BUS);  // Vernetzung Alarm senden
-				ARRAY_SET_BIT(objSendReqFlags, OBJ_STAT_ALARM); // Status Alarm senden
+				objectSetValue(OBJ_STAT_ALARM_DELAYED, read_obj_value(OBJ_STAT_ALARM_DELAYED)); // Status verzögerter Alarm zurücksetzen
+				//ARRAY_SET_BIT(objSendReqFlags, OBJ_ALARM_BUS);  // Vernetzung Alarm senden
+				//ARRAY_SET_BIT(objSendReqFlags, OBJ_STAT_ALARM); // Status Alarm senden
+
+				objectWrite(OBJ_ALARM_BUS, alarmLocal);
 			}
 		}
 		else // Alarm zyklisch senden
@@ -840,8 +856,8 @@ void initApplication()
 {
 	unsigned char i;
 
-	pinMode(PIO3_5, OUTPUT);
-	digitalWrite(PIO3_5, 0);	// PIO3_5 low to enable serial communication
+	pinMode(RM_COMM_ENABLE, OUTPUT);
+	digitalWrite(RM_COMM_ENABLE, 0);	// PIO3_5 low to enable RM serial communication feature
 
 	rm_serial_init(); 	//serielle Schnittstelle für die Kommunikarion mit dem Rauchmelder initialisieren
 
