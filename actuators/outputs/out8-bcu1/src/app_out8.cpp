@@ -625,7 +625,7 @@ void stopApplication()
 
     //switch off all possible active relay coils, to save some power
     for (unsigned int i = 0; i < sizeof(outputPins)/sizeof(outputPins[0]); i++)
-        digitalWrite(outputPins[0], 0);
+        digitalWrite(outputPins[i], 0);
 
 
 #ifdef HAND_ACTUATION
