@@ -2,7 +2,8 @@ PWM_Timeout  = 50
 
 Section          ("Collect the feedback telegrams from the powerup")
 App_Loop         ()
-Send_Telegram    (device.com_object [ 12+0], 0)
+### the feedback polarity of channel 1 is inverted (Jung_2138_Simple.device), all relays are open at powerup
+Send_Telegram    (device.com_object [ 12+0], 1)
 Send_Telegram    (device.com_object [ 12+1], 0)
 Send_Telegram    (device.com_object [ 12+2], 0)
 Send_Telegram    (device.com_object [ 12+4], 0)
