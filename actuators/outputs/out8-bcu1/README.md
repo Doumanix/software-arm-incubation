@@ -82,3 +82,23 @@ https://downloads.jung.de/public/de/software/produktdatenbanken/ets2_ets3/de_213
 |Readback     |PIN_LT9   |9         |PIO2_3   |                                |
 
 ## See [config.h](inc/config.h) for additional information.
+
+## Build with CMake (Bauen mit CMake)
+Requires the sblib repository as `../../../software-arm-lib` (git submodule) and the MCUXpresso toolchain
+(environment variable `MCUXPRESSO_TOOLCHAIN_PATH`, e.g. `C:/nxp/MCUXpressoIDE_24.9.25/ide/tools`).
+
+```
+cmake --workflow --preset build-arm-all
+```
+
+| Target | Content (Inhalt) |
+|---|---|
+| `out8-bcu1_all` | all standalone variants, Debug and Release (alle eigenständigen Varianten) |
+| `out8-bcu1_flashstart` | all variants for the Selfbus bootloader (`Flashstart 0x3000`), **Release only** (nur Release, Debug-Images passen nicht zwischen Bootloader und UserEeprom) |
+
+Each MCUXpresso build configuration is a target, e.g. `out8-bcu1_o8_4t_bf_ha` or
+`out8-bcu1_Flashstart_0x3000_o8_4t_bf_ha`. Output: `.axf`, `.hex`, `.bin`, `.map` in `cmake-build/<preset>/<config>/`.
+Flash for code ends at `0xF000` (last 4 KB sector = UserEeprom), see `OUT8_FLASH_END`.
+
+To use a sblib checkout at another location, override `SB_PATH_TO_SBLIB_REPO` and the toolchain file
+in a local `CMakeUserPresets.json`.
