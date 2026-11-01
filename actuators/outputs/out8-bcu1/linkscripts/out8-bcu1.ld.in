@@ -7,6 +7,11 @@
  *   - "Flashstart 0xWXYZ":  flash  0xWXYZ / 60 KB - 0xWXYZ,
  *                          RAM    0x100000d4 / 8 KB - 0xd4 (bus updater copies 0xd4 bytes)
  *
+ * Start-up code: src/startup_lpc11xx.cpp (symbols __data_load__, __data_start__, __bss_start__ ...),
+ * heap and abort(): src/libc_stubs.cpp (no NXP run-time library)
+ *
+ * Copyright (c) 2026 Doumanix <doumanix@gmx.de>
+ *
  * Variant: @OUT8_LD_VARIANT@
  */
 
@@ -19,7 +24,6 @@ GROUP (
   "crtn.o"
   "crtbegin.o"
   "crtend.o"
-  "libcr_newlib_nohost.a"
 )
 MEMORY
 {
@@ -38,7 +42,7 @@ MEMORY
       __top_RamLoc8 = @OUT8_RAM_ORIGIN@ + @OUT8_RAM_LENGTH@;
       __top_RAM = @OUT8_RAM_ORIGIN@ + @OUT8_RAM_LENGTH@;
 
-ENTRY(ResetISR)
+ENTRY(Reset_Handler)
 
 SECTIONS
 {
@@ -48,22 +52,7 @@ SECTIONS
         FILL(0xff)
         __vectors_start__ = ABSOLUTE(.) ;
         KEEP(*(.isr_vector))
-        /* Global Section Table */
         . = ALIGN(4) ;
-        __section_table_start = .;
-        __data_section_table = .;
-        LONG(LOADADDR(.data));
-        LONG(    ADDR(.data));
-        LONG(  SIZEOF(.data));
-        __data_section_table_end = .;
-        __bss_section_table = .;
-        LONG(    ADDR(.bss));
-        LONG(  SIZEOF(.bss));
-        __bss_section_table_end = .;
-        __section_table_end = . ;
-        /* End of Global Section Table */
-
-        *(.after_vectors*)
 
        *(.text*)
        *(.rodata .rodata.* .constdata .constdata.*)
@@ -116,6 +105,7 @@ SECTIONS
     } > MFlash64
 
     _etext = .;
+    __etext = .;
 
     /* MAIN DATA SECTION */
     .uninit_RESERVED (NOLOAD) : ALIGN(4)
@@ -131,6 +121,7 @@ SECTIONS
     {
        FILL(0xff)
        _data = . ;
+       __data_start__ = . ;
        PROVIDE(__start_data_RAM = .) ;
        PROVIDE(__start_data_RamLoc8 = .) ;
        *(vtable)
@@ -141,20 +132,24 @@ SECTIONS
        *(.data*)
        . = ALIGN(4) ;
        _edata = . ;
+       __data_end__ = . ;
        PROVIDE(__end_data_RAM = .) ;
        PROVIDE(__end_data_RamLoc8 = .) ;
     } > RamLoc8 AT>MFlash64
+    __data_load__ = LOADADDR(.data);
 
     /* MAIN BSS SECTION */
     .bss (NOLOAD) : ALIGN(4)
     {
         _bss = .;
+        __bss_start__ = .;
         PROVIDE(__start_bss_RAM = .) ;
         PROVIDE(__start_bss_RamLoc8 = .) ;
         *(.bss*)
         *(COMMON)
         . = ALIGN(4) ;
         _ebss = .;
+        __bss_end__ = .;
         PROVIDE(__end_bss_RAM = .) ;
         PROVIDE(__end_bss_RamLoc8 = .) ;
         PROVIDE(end = .);
@@ -173,18 +168,15 @@ SECTIONS
        PROVIDE(__end_noinit_RamLoc8 = .) ;
     } > RamLoc8 AT> RamLoc8
 
-    PROVIDE(_pvHeapStart = DEFINED(__user_heap_base) ? __user_heap_base : .);
+    /* Heap from here up to the stack (_sbrk), stack from the top of RAM downwards */
+    __HeapBase = .;
+    __StackTop = __top_RamLoc8;
 
-    PROVIDE(_vStackTop = DEFINED(__user_stack_top) ? __user_stack_top : __top_RamLoc8 - 0);
-
-    /* ## Create checksum value (used in startup) ## */
-    PROVIDE(__valid_user_code_checksum = 0 -
-                                         (_vStackTop
-                                         + (ResetISR + 1)
-                                         + (( DEFINED(NMI_Handler) ? NMI_Handler : M0_NMI_Handler ) + 1)
-                                         + (( DEFINED(HardFault_Handler) ? HardFault_Handler : M0_HardFault_Handler ) + 1)
-                                         )
-           );
+    /* Checksum of the vectors 0..6 for the LPC boot ROM, stored in vector 7 by the start-up code */
+    __valid_user_code_checksum = 0 - (__StackTop
+                                      + (Reset_Handler + 1)
+                                      + (NMI_Handler + 1)
+                                      + (HardFault_Handler + 1));
 
     /* Provide basic symbols giving location and size of main text
      * block, including initial values of RW data sections. Note that

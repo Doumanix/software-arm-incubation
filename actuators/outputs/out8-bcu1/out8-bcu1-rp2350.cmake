@@ -40,7 +40,7 @@ set(OUT8_SW_VERSION "${PROJECT_VERSION}" CACHE STRING "Software version used in 
 include(${CMAKE_CURRENT_LIST_DIR}/out8-bcu1.cmake)
 
 # LPC startup code is replaced by the Pico SDK runtime. bus_voltage.cpp uses the LPC11xx ADC.
-list(REMOVE_ITEM OUT8_BCU1_SRC src/cr_startup_lpc11xx.cpp)
+list(REMOVE_ITEM OUT8_BCU1_SRC src/libc_stubs.cpp src/startup_lpc11xx.cpp)
 list(REMOVE_ITEM OUT8_BCU1_COMMON_SRC bus_voltage/bus_voltage.cpp)
 
 set(_common_sources "")
