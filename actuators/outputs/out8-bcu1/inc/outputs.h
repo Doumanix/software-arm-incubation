@@ -3,6 +3,7 @@
  *                need of the application
  *
  *  Copyright (C) 2014-2015 Martin Glueck <martin@mangari.org>
+ *  Copyright (c) 2026 Doumanix <doumanix@gmx.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as

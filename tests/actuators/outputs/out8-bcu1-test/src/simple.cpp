@@ -2,6 +2,7 @@
  *  simple_i.cpp - Simple tests
  *
  *  Copyright (c) 2014 Martin Glueck <martin@mangari.org>
+ *  Copyright (c) 2026 Doumanix <doumanix@gmx.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
