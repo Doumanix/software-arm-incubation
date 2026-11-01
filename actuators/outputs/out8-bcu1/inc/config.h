@@ -128,8 +128,10 @@
 /*
  *  AD-pin used for "random" app start-up delay
  */
-#define FLOATING_AD_PIN PIN_IO12
-#define FLOATING_AD_CHANNEL AD5
+#if !defined(SBLIB_PLATFORM_RP2350) // RP2350: hwRandom() instead (floating inputs, errata RP2350-E9)
+#   define FLOATING_AD_PIN PIN_IO12
+#   define FLOATING_AD_CHANNEL AD5
+#endif
 
 
 
@@ -150,6 +152,9 @@
 
 #ifdef ZERO_DETECT
 #   warning "ZERO-DETECT is untested."
+#   if !defined(SBLIB_PLATFORM_LPC11XX)
+#       error "ZERO_DETECT is only supported on LPC1115; other platforms need an equivalent hardware path first."
+#   endif
 #endif
 
 #if defined(ZERO_DETECT) && defined(BI_STABLE)
@@ -172,7 +177,28 @@
  *  output pins configuration
  */
 #ifdef OUT8
-#    ifdef BI_STABLE
+#    if defined(SBLIB_BOARD_RP2350_PICO2_TESTBOARD)
+#       if !defined(BI_STABLE) || defined(HAND_ACTUATION) || defined(BUSFAIL) || defined(ZERO_DETECT)
+#           error "Pico 2 test board: only BI_STABLE, without HAND_ACTUATION, BUSFAIL and ZERO_DETECT"
+#       endif
+        // Pico 2 test board (RP2350), test profile of the RP2354 bring-up, not a confirmed
+        // relay wiring: channel 1..8 ON pulse on GPIO2/3/6/7/10..13, OFF pulse on GPIO14..21,
+        // active HIGH. GPIO4/5 (I2C), 8/9 (UART1), 22 (PROG), 25 (RUN), 27/28 (KNX) stay free.
+        const int outputPins[NO_OF_OUTPUTS] =
+        {
+            // ON pin, OFF pin (see pinOn()/pinOff() in outputsBiStable.cpp)
+            GPIO2,  GPIO14, // channel 1
+            GPIO3,  GPIO15, // channel 2
+            GPIO6,  GPIO16, // channel 3
+            GPIO7,  GPIO17, // channel 4
+            GPIO10, GPIO18, // channel 5
+            GPIO11, GPIO19, // channel 6
+            GPIO12, GPIO20, // channel 7
+            GPIO13, GPIO21  // channel 8
+        };
+#    elif defined(SBLIB_PLATFORM_RP2350)
+#       error "out8-bcu1: no output pin table for this RP2350 board"
+#    elif defined(BI_STABLE)
         // 4TE-ARM Controller + out8_16A (bi-stable relays)
         // PCB: https://github.com/selfbus/hardware-merged/tree/main/applications_din/out_8x_16A_bistab_4MU
         // Wiki: https://selfbus.org/wiki/devices/outputs/25-switching-actuator-8x-230v-16a-4module-units

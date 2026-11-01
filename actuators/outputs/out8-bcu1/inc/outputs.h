@@ -194,6 +194,9 @@ ALWAYS_INLINE void Outputs::setOutputs(void)
 #ifdef __LPC11XX__
     gpioPorts[0]->MASKED_ACCESS[_port_0_set] = 0xFFFF;
     gpioPorts[2]->MASKED_ACCESS[_port_2_set] = 0xFFFF;
+#elif defined(SBLIB_PLATFORM_RP2350)
+    portWriteMask(0, _port_0_set, true); // GPIO0..31
+    portWriteMask(1, _port_2_set, true); // GPIO32..47
 #else
     LPC_GPIO->SET[0] = _port_0_set;
     LPC_GPIO->SET[1] = _port_2_set;
@@ -206,6 +209,9 @@ ALWAYS_INLINE void Outputs::clrOutputs(void)
 #ifdef __LPC11XX__
     gpioPorts[0]->MASKED_ACCESS[_port_0_clr] = 0x0000;
     gpioPorts[2]->MASKED_ACCESS[_port_2_clr] = 0x0000;
+#elif defined(SBLIB_PLATFORM_RP2350)
+    portWriteMask(0, _port_0_clr, false); // GPIO0..31
+    portWriteMask(1, _port_2_clr, false); // GPIO32..47
 #else
     LPC_GPIO->CLR[0] = _port_0_clr;
     LPC_GPIO->CLR[1] = _port_2_clr;

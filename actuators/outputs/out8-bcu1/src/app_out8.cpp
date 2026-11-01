@@ -510,7 +510,10 @@ void delayAppStart()
 {
     const int msMultiplier = 500;
     unsigned int delayAppStartms = 1;
-#ifndef DEBUG
+#if !defined(DEBUG) && defined(SBLIB_PLATFORM_RP2350)
+    // delay the app start by 0.5-10 seconds, so not all out8-apps will return the same time the bus returns.
+    delayAppStartms = (hwRandom() % 20) * msMultiplier;
+#elif !defined(DEBUG)
     delay(msMultiplier); // always delay a little bit to let the AD-Pin "float"
     // delay the app start by 0.5-10 seconds, so not all out8-apps will return the same time the bus returns.
     analogBegin();  // this needs a re-enable of bus voltage monitoring (in app_main.cpp)

@@ -34,6 +34,23 @@
                 "default-generator-ninja-multi-config",
                 "default-toolchain-arm-none-eabi"
             ]
+        },
+        {
+            "name": "rp2350-pico2",
+            "displayName": "RP2350 Target (Pico 2 test board)",
+            "description": "RP2350 build with external Pico SDK 2.2.0 from PICO_SDK_PATH, toolchain from ARM_TOOLCHAIN_PATH or MCUXPRESSO_TOOLCHAIN_PATH",
+            "hidden": false,
+            "inherits": [
+                "default-build-directory",
+                "default-generator-ninja-multi-config"
+            ],
+            "cacheVariables": {
+                "PICO_SDK_PATH": "$env{PICO_SDK_PATH}",
+                "SBLIB_MCU": "RP2350",
+                "SBLIB_BOARD": "pico2_testboard",
+                "PICO_PLATFORM": "rp2350-arm-s",
+                "PICO_BOARD": "pico2"
+            }
         }
     ],
     "buildPresets": [
@@ -59,6 +76,26 @@
                 "out8-bcu1_all",
                 "out8-bcu1_flashstart"
             ]
+        },
+        {
+            "name": "debug-rp2350-pico2",
+            "configurePreset": "rp2350-pico2",
+            "configuration": "Debug",
+            "displayName": "RP2350 Debug Build",
+            "hidden": false,
+            "targets": [
+                "out8-bcu1_all"
+            ]
+        },
+        {
+            "name": "release-rp2350-pico2",
+            "configurePreset": "rp2350-pico2",
+            "configuration": "Release",
+            "displayName": "RP2350 Release Build",
+            "hidden": false,
+            "targets": [
+                "out8-bcu1_all"
+            ]
         }
     ],
     "workflowPresets": [
@@ -78,6 +115,25 @@
                 {
                     "type": "build",
                     "name": "debug-arm"
+                }
+            ]
+        },
+        {
+            "name": "build-rp2350-pico2-all",
+            "description": "Build all out8-bcu1 RP2350 variants in Debug and Release configurations",
+            "displayName": "Build RP2350 Pico 2 (all configs)",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "rp2350-pico2"
+                },
+                {
+                    "type": "build",
+                    "name": "release-rp2350-pico2"
+                },
+                {
+                    "type": "build",
+                    "name": "debug-rp2350-pico2"
                 }
             ]
         }
