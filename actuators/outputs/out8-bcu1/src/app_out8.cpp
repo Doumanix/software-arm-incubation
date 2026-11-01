@@ -625,7 +625,9 @@ void stopApplication()
       channel_timeout[i].On.stop();
     }
 
-#ifndef BI_STABLE
+#if defined(OUT8_RP_MONOSTABLE)
+    Out8RpPwm::stop();
+#elif !defined(BI_STABLE)
     pinMode(PIN_PWM, OUTPUT); //switch off PWM for mono-stable relays
     digitalWrite(PIN_PWM, 1);
 #endif

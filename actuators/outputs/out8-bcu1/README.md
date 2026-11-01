@@ -102,3 +102,7 @@ Flash for code ends at `0xF000` (last 4 KB sector = UserEeprom), see `OUT8_FLASH
 
 To use a sblib checkout at another location, override `SB_PATH_TO_SBLIB_REPO` and the toolchain file
 in a local `CMakeUserPresets.json`.
+
+## RP monostable test signals
+
+See [RP monostable contract](doc/README.md) for the explicit eight-channel/common-gate profile, PWM polarity and resource contract. This is a test profile without confirmed relay wiring.

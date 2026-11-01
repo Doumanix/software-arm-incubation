@@ -70,6 +70,12 @@ function(out8_rp2350_add_firmware name)
     )
     target_compile_definitions(${target} PRIVATE OUT8 ${ARGN})
     target_link_libraries(${target} PRIVATE pico_stdlib sblib_rp2350)
+    if("OUT8_RP_MONOSTABLE" IN_LIST ARGN)
+        target_sources(${target} PRIVATE src/outputsRpPwm.cpp)
+        target_link_libraries(${target} PRIVATE hardware_pwm hardware_clocks)
+        target_link_options(${target} PRIVATE
+            "-Wl,-Map=$<TARGET_FILE_DIR:${target}>/${target}_v${OUT8_SW_VERSION}.map")
+    endif()
     pico_enable_stdio_uart(${target} 0)
     pico_enable_stdio_usb(${target} 0)
 
@@ -88,6 +94,7 @@ endfunction()
 if(SBLIB_BOARD STREQUAL "pico2_testboard")
     set(OUT8_RP2350_VARIANTS
         "o8_pico2tb_bi|BI_STABLE"
+        "o8_pico2tb_mono|OUT8_RP_MONOSTABLE"
     )
 else()
     message(FATAL_ERROR "out8-bcu1: no variants for SBLIB_BOARD=${SBLIB_BOARD} (add an output pin table in inc/config.h)")

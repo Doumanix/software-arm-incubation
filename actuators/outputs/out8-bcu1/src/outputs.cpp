@@ -3,6 +3,7 @@
  *                need of the application
  *
  *  Copyright (C) 2014-2015 Martin Glueck <martin@mangari.org>
+ *  Copyright (c) 2026 Doumanix <doumanix@gmx.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -26,7 +27,12 @@ const unsigned int zeroDetectClrDelay = 576; // 5.76 milliseconds Omron G5Q-1A E
 void Outputs::begin(unsigned int initial, unsigned int inverted, unsigned int channelcount)
 {
 
-#ifndef BI_STABLE
+#if defined(OUT8_RP_MONOSTABLE)
+    Out8RpPwm::begin();
+    _pwm_timeout.stop();
+    _port_0_set = _port_0_clr = _port_2_set = _port_2_clr = 0;
+    _blocked = 0;
+#elif !defined(BI_STABLE)
     pinMode(PIN_PWM, OUTPUT_MATCH);  // configure digital pin PIO3_2(PWM) to match MAT2 of timer16 #0
     //pinMode(PIO1_4, OUTPUT);
     timer16_0.begin();
@@ -78,6 +84,10 @@ void Outputs::setupOutputs(const int* Pins, const unsigned int pinCount)
 {
     _outputPins = (unsigned int*) Pins;
     _pinCount = pinCount;
+#if defined(OUT8_RP_MONOSTABLE)
+    // Make the common gate inactive before any selector becomes an output.
+    Out8RpPwm::begin();
+#endif
     for (unsigned int channel = 0; channel < outputCount(); channel++)
     {
         pinMode(outputPins[channel], OUTPUT);
@@ -103,7 +113,11 @@ unsigned int Outputs::updateOutput(unsigned int channel)
     if (value)
     {
         // output needs to be switched ON -> disable the PWM
+#if defined(OUT8_RP_MONOSTABLE)
+        Out8RpPwm::pullIn();
+#else
         timer16_0.match(TIMER_MATCH_MAT2, PWM_PERIOD);
+#endif
         _pwm_timeout.start(PWM_TIMEOUT);
         result = true;
     }
@@ -133,6 +147,13 @@ unsigned int Outputs::updateOutput(unsigned int channel)
 #else
     setOutputs();
     clrOutputs();
+#if defined(OUT8_RP_MONOSTABLE)
+    if (((_relayState ^ _inverted) & ((1u << _channelcount) - 1u)) == 0)
+    {
+        _pwm_timeout.stop();
+        Out8RpPwm::stop();
+    }
+#endif
 #endif
 
     return result;

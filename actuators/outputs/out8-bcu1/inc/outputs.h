@@ -19,6 +19,10 @@
 #include <sblib/io_pin_names.h>
 #include "config.h"
 
+#if defined(OUT8_RP_MONOSTABLE)
+#   include "outputsRpPwm.h"
+#endif
+
 #ifdef HAND_ACTUATION
 #   include "hand_actuation.h"
 #endif
@@ -168,7 +172,18 @@ ALWAYS_INLINE void Outputs::checkPWM(void)
 {
     if(_pwm_timeout.expired())
     {
+#if defined(OUT8_RP_MONOSTABLE)
+        if ((_relayState ^ _inverted) & ((1u << _channelcount) - 1u))
+        {
+            Out8RpPwm::hold();
+        }
+        else
+        {
+            Out8RpPwm::stop();
+        }
+#else
         timer16_0.match(TIMER_MATCH_MAT2, PWM_DUTY);
+#endif
         //digitalWrite(PIO1_4, 0);
     }
 }
@@ -189,7 +204,11 @@ ALWAYS_INLINE void Outputs::setOutputs(void)
 {
     if (_port_0_set || _port_2_set)
     {   // at least one port will be switched on
+#if defined(OUT8_RP_MONOSTABLE)
+        Out8RpPwm::pullIn();
+#else
         timer16_0.match(TIMER_MATCH_MAT2, PWM_PERIOD);// disable the PWM
+#endif
         _pwm_timeout.start(PWM_TIMEOUT);
     }
 #ifdef __LPC11XX__

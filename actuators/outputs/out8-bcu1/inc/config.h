@@ -151,6 +151,11 @@
 #   define NO_OF_CHANNELS 8
 #endif
 
+#if defined(OUT8_RP_MONOSTABLE) && (!defined(SBLIB_PLATFORM_RP2350) || \
+        !defined(SBLIB_BOARD_RP2350_PICO2_TESTBOARD))
+#   error "OUT8_RP_MONOSTABLE requires the RP2350 Pico 2 test board"
+#endif
+
 #ifdef ZERO_DETECT
 #   warning "ZERO-DETECT is untested."
 #   if !defined(SBLIB_PLATFORM_LPC11XX)
@@ -179,9 +184,21 @@
  */
 #ifdef OUT8
 #    if defined(SBLIB_BOARD_RP2350_PICO2_TESTBOARD)
-#       if !defined(BI_STABLE) || defined(HAND_ACTUATION) || defined(BUSFAIL) || defined(ZERO_DETECT)
-#           error "Pico 2 test board: only BI_STABLE, without HAND_ACTUATION, BUSFAIL and ZERO_DETECT"
+#       if defined(BI_STABLE) == defined(OUT8_RP_MONOSTABLE)
+#           error "Pico 2 test board: select exactly one of BI_STABLE and OUT8_RP_MONOSTABLE"
 #       endif
+#       if defined(HAND_ACTUATION) || defined(BUSFAIL) || defined(ZERO_DETECT)
+#           error "Pico 2 test board: HAND_ACTUATION, BUSFAIL and ZERO_DETECT are not supported"
+#       endif
+#       if defined(OUT8_RP_MONOSTABLE)
+#           define OUT8_RP_PWM_PIN GPIO26
+        // Test signals only: eight active-HIGH selects plus an active-LOW common PWM gate.
+        // No relay PCB wiring is implied. GPIO26 is PWM slice 5/A; GPIO10/11 remain SIO.
+        const int outputPins[NO_OF_OUTPUTS] =
+        {
+            GPIO2, GPIO3, GPIO6, GPIO7, GPIO10, GPIO11, GPIO12, GPIO13
+        };
+#       else
         // Pico 2 test board (RP2350), test profile of the RP2354 bring-up, not a confirmed
         // relay wiring: channel 1..8 ON pulse on GPIO2/3/6/7/10..13, OFF pulse on GPIO14..21,
         // active HIGH. GPIO4/5 (I2C), 8/9 (UART1), 22 (PROG), 25 (RUN), 27/28 (KNX) stay free.
@@ -197,6 +214,7 @@
             GPIO12, GPIO20, // channel 7
             GPIO13, GPIO21  // channel 8
         };
+#       endif
 #    elif defined(SBLIB_PLATFORM_RP2350)
 #       error "out8-bcu1: no output pin table for this RP2350 board"
 #    elif defined(BI_STABLE)
