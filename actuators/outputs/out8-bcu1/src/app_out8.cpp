@@ -493,8 +493,11 @@ void checkTimeouts(void)
         {
             unsigned int newValue = (onTimedout == true);
             relays.updateChannel(objno, newValue);
-            bcu.comObjects->objectWrite(COMOBJ_FEEDBACK1 + objno, newValue);
-            _handle_timed_functions(objno, newValue);
+            bcu.comObjects->objectWrite(objno, newValue);
+            if (getTimerCfg(objno).timerMode)
+            {
+                _handle_timed_functions(objno, newValue);
+            }
             _handle_logic_function(objno, newValue);
         }
     }
