@@ -1,5 +1,6 @@
 /*
  *  Copyright (c) 2013-2014 Stefan Taferner <stefan.taferner@gmx.at>
+ *  Copyright (c) 2026 Doumanix <doumanix@gmx.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -17,11 +18,8 @@
 
 APP_VERSION("TSU/4.2 ", "0", "02") // Don't forget to also change the build-variable sw_version
 
-// Digital pin for LED
-#define PIO_LED PIO0_7
-
-// Input pins
-static const int inputPins[] = { PIO2_3, PIO2_2, PIO2_1, PIO2_0 };
+// Input and LED pins
+#include "config.h"
 
 // Debouncers for inputs
 Debouncer inputDebouncer[NUM_CHANNELS];
@@ -49,7 +47,7 @@ BcuBase* setup()
         pinMode(inputPins[channel], INPUT | HYSTERESIS | PULL_UP);
         inputDebouncer[channel].init(digitalRead(inputPins[channel]));
     }
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(SBLIB_PLATFORM_RP2350) // serial driver not available on the RP2350 yet
     if (!serial.enabled())
     {
         serial.begin(115200);

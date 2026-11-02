@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.28)
 
+# Target microcontroller. RP2350: separate build in in4-bcu2-rp2350.cmake (Pico SDK).
+set(SBLIB_MCU "LPC1115" CACHE STRING "Target microcontroller (LPC1115, RP2350)")
+set_property(CACHE SBLIB_MCU PROPERTY STRINGS LPC1115 RP2350)
+if(SBLIB_MCU STREQUAL "RP2350")
+    include(${CMAKE_CURRENT_LIST_DIR}/in4-bcu2-rp2350.cmake)
+    return()
+endif()
+
 project(in4-bcu2 LANGUAGES C CXX VERSION 0.02)
 
 set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "Enable verbose output from the build system")

@@ -3,6 +3,7 @@ set(IN4_BCU2_SRC
     src/app_in4.h
     src/app_main.cpp
     src/com_objs.h
+    src/config.h
     src/cr_startup_lpc11xx.cpp
     src/params.h
 )

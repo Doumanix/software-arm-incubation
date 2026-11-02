@@ -1,5 +1,6 @@
 /*
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
+ *  Copyright (c) 2026 Doumanix <doumanix@gmx.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -100,10 +101,12 @@ void inputChanged(int channel, int val)
         return;
     }
 
+#if !defined(SBLIB_PLATFORM_RP2350) // serial driver not available on the RP2350 yet
     serial.print("input ");
     serial.print(channel);
     serial.print(" value ");
     serial.println(val);
+#endif
 
     if (lastLock[channel])
         return;
