@@ -1,4 +1,8 @@
-/* Copyright (C) 2026 Doumanix <doumanix@gmx.de>. GNU GPL version 3. */
+/**
+ * @author Doumanix <doumanix@gmx.de> Copyright (c) 2026
+ * @par License
+ * GNU General Public License version 3.
+ */
 #include "../model.h"
 constexpr int GPIO_FUNC_PWM = 4;
 inline void gpio_init(uint32_t pin)

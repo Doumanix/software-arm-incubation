@@ -1,4 +1,8 @@
-/* Copyright (C) 2026 Doumanix <doumanix@gmx.de>. GNU GPL version 3. */
+/**
+ * @author Doumanix <doumanix@gmx.de> Copyright (c) 2026
+ * @par License
+ * GNU General Public License version 3.
+ */
 #ifndef OUT8_TEST_DIGITAL_H_
 #define OUT8_TEST_DIGITAL_H_
 #include "../model.h"

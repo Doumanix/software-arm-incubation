@@ -1,6 +1,8 @@
 /**
  * @brief Executes the real out8 channel/PWM code against observable register/pad models.
- * Copyright (C) 2026 Doumanix <doumanix@gmx.de>. GNU GPL version 3.
+ * @author Doumanix <doumanix@gmx.de> Copyright (c) 2026
+ * @par License
+ * GNU General Public License version 3.
  */
 #include "outputs.h"
 #include "model.h"

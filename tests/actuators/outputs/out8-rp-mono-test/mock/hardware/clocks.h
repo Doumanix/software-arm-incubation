@@ -1,4 +1,8 @@
-/* Copyright (C) 2026 Doumanix <doumanix@gmx.de>. GNU GPL version 3. */
+/**
+ * @author Doumanix <doumanix@gmx.de> Copyright (c) 2026
+ * @par License
+ * GNU General Public License version 3.
+ */
 #include "../model.h"
 constexpr int clk_sys = 0;
 inline uint32_t clock_get_hz(int)
