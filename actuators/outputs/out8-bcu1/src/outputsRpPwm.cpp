@@ -6,10 +6,10 @@
  * GNU General Public License version 3.
  */
 #include "outputs.h"
+#include "sblib/utils.h"
 #include <hardware/clocks.h>
 #include <hardware/gpio.h>
 #include <hardware/pwm.h>
-#include <sblib/utils.h>
 
 namespace
 {

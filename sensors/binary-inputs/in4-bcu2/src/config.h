@@ -10,7 +10,7 @@
 #ifndef IN4_BCU2_CONFIG_H_
 #define IN4_BCU2_CONFIG_H_
 
-#include <sblib/io_pin_names.h>
+#include "sblib/io_pin_names.h"
 
 #if defined(SBLIB_BOARD_RP2350_PICO2_TESTBOARD)
 // Pico 2 test board (RP2350): test profile, no input PCB wiring implied.
