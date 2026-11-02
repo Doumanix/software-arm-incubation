@@ -16,21 +16,21 @@ inline void digitalWrite(int pin, bool value)
 {
     model::pins[pin] = value;
 }
-inline unsigned int digitalRead(int pin)
+inline uint32_t digitalRead(int pin)
 {
     return model::pins[pin];
 }
-inline unsigned int digitalPinToBitMask(unsigned int pin)
+inline uint32_t digitalPinToBitMask(uint32_t pin)
 {
     return 1u << (pin % 32);
 }
-inline unsigned int digitalPinToPort(unsigned int pin)
+inline uint32_t digitalPinToPort(uint32_t pin)
 {
     return pin / 32;
 }
-inline void portWriteMask(unsigned int port, unsigned int mask, bool value)
+inline void portWriteMask(uint32_t port, uint32_t mask, bool value)
 {
-    for (unsigned int bit = 0; bit < 32 && port * 32 + bit < 48; bit++)
+    for (uint32_t bit = 0; bit < 32 && port * 32 + bit < 48; bit++)
     {
         if (mask & (1u << bit))
         {

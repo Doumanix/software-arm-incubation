@@ -10,7 +10,7 @@
 
 namespace
 {
-    unsigned int assertions = 0;
+    uint32_t assertions = 0;
     void require(bool condition, const char* text)
     {
         assertions++;
@@ -19,14 +19,14 @@ namespace
             throw std::runtime_error(text);
         }
     }
-    unsigned int lowTicks()
+    uint32_t lowTicks()
     {
         return model::slices[5].level[0];
     }
-    unsigned int selected()
+    uint32_t selected()
     {
-        unsigned int result = 0;
-        for (unsigned int channel = 0; channel < 8; channel++)
+        uint32_t result = 0;
+        for (uint32_t channel = 0; channel < 8; channel++)
         {
             if (model::pins[outputPins[channel]])
             {
@@ -35,13 +35,13 @@ namespace
         }
         return result;
     }
-    void reset(unsigned int initial = 0, unsigned int inverted = 0, unsigned int now = 0)
+    void reset(uint32_t initial = 0, uint32_t inverted = 0, uint32_t now = 0)
     {
         for (auto& slice: model::slices)
         {
             slice = {};
         }
-        for (unsigned int pin = 0; pin < 48; pin++)
+        for (uint32_t pin = 0; pin < 48; pin++)
         {
             model::pins[pin] = false;
             model::function[pin] = -1;
@@ -64,11 +64,11 @@ namespace
         require(slice.config.invertA && !slice.config.invertB, "active-LOW common gate");
         require(model::function[26] == 4 && model::pins[26], "gate pad starts inactive HIGH");
         require(selected() == 0 && lowTicks() == 0, "init OFF");
-        for (unsigned int channel = 0; channel < 8; channel++)
+        for (uint32_t channel = 0; channel < 8; channel++)
         {
             require(model::function[outputPins[channel]] == 0, "channel must remain SIO");
         }
-        for (unsigned int sliceNumber = 0; sliceNumber < 12; sliceNumber++)
+        for (uint32_t sliceNumber = 0; sliceNumber < 12; sliceNumber++)
         {
             if (sliceNumber != 5)
             {
@@ -99,7 +99,7 @@ namespace
     }
     void eightChannelsAndInversion()
     {
-        for (unsigned int channel = 0; channel < 8; channel++)
+        for (uint32_t channel = 0; channel < 8; channel++)
         {
             reset();
             relays.setChannel(channel);
@@ -115,7 +115,7 @@ namespace
         reset(0xa5, 0x5a);
         require(selected() == 0xff, "initial logical/inversion XOR");
         require(relays.channel(0) == 1 && relays.channel(1) == 0, "inversion must not corrupt logical state");
-        for (unsigned int channel = 0; channel < 8; channel++)
+        for (uint32_t channel = 0; channel < 8; channel++)
         {
             relays.updateChannel(channel, (0x5a >> channel) & 1);
         }
@@ -140,7 +140,7 @@ namespace
         relays.checkPWM();
         require(lowTicks() == 352, "shared hold deadline");
         reset();
-        for (unsigned int channel = 0; channel < 8; channel++)
+        for (uint32_t channel = 0; channel < 8; channel++)
         {
             relays.setChannel(channel);
         }

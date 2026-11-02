@@ -7,24 +7,24 @@ namespace model
 {
     struct Config
     {
-        unsigned int divider16 = 16;
-        unsigned int wrap = 65535;
+        uint32_t divider16 = 16;
+        uint32_t wrap = 65535;
         bool invertA = false;
         bool invertB = false;
     };
     struct Slice
     {
         Config config;
-        unsigned int level[2] = {};
+        uint32_t level[2] = {};
         bool enabled = false;
-        unsigned int initializations = 0;
+        uint32_t initializations = 0;
     };
     inline Slice slices[12];
     inline bool pins[48] = {};
     inline int function[48] = {};
     inline bool direction[48] = {};
-    inline unsigned int now = 0;
-    inline unsigned int clock = 150000000;
-    inline unsigned int delayed = 0;
+    inline uint32_t now = 0;
+    inline uint32_t clock = 150000000;
+    inline uint32_t delayed = 0;
 } // namespace model
 #endif
