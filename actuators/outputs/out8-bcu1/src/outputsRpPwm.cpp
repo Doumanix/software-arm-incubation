@@ -1,7 +1,6 @@
 /**
  * @brief RP hardware PWM equivalent of the LPC out8 common gate.
- * @author Doumanix <doumanix@gmx.de>
- * Copyright (C) 2026 Doumanix <doumanix@gmx.de>
+ * @author Doumanix <doumanix@gmx.de> Copyright (c) 2026
  * @par License
  * GNU General Public License version 3.
  */

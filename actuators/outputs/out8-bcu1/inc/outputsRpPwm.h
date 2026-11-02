@@ -1,7 +1,6 @@
 /**
  * @brief Common active-LOW hardware PWM gate for the out8 RP test profile.
- * @author Doumanix <doumanix@gmx.de>
- * Copyright (C) 2026 Doumanix <doumanix@gmx.de>
+ * @author Doumanix <doumanix@gmx.de> Copyright (c) 2026
  * @par License
  * GNU General Public License version 3.
  */
