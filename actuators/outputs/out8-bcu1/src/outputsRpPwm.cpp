@@ -15,11 +15,11 @@ namespace
 {
     // LPC counts 0..MR3 inclusive at 100 kHz. Scale by 16 to keep the
     // RP divider within range while retaining the same period and low time.
-    constexpr unsigned int counterScale = 16;
-    constexpr unsigned int counterHz = 100000 * counterScale;
-    constexpr unsigned int wrap = (PWM_PERIOD + 1) * counterScale - 1;
+    constexpr uint32_t counterScale = 16;
+    constexpr uint32_t counterHz = 100000 * counterScale;
+    constexpr uint32_t wrap = (PWM_PERIOD + 1) * counterScale - 1;
 
-    void setLowTicks(const unsigned int ticks)
+    void setLowTicks(const uint32_t ticks)
     {
         pwm_set_gpio_level(OUT8_RP_PWM_PIN, ticks * counterScale);
     }
@@ -31,7 +31,7 @@ void Out8RpPwm::begin()
     gpio_init(OUT8_RP_PWM_PIN);
     gpio_put(OUT8_RP_PWM_PIN, true);
     gpio_set_dir(OUT8_RP_PWM_PIN, true);
-    const unsigned int slice = pwm_gpio_to_slice_num(OUT8_RP_PWM_PIN);
+    const uint32_t slice = pwm_gpio_to_slice_num(OUT8_RP_PWM_PIN);
     pwm_config config = pwm_get_default_config();
     const uint64_t divider16 = (static_cast<uint64_t>(clock_get_hz(clk_sys)) * 16u + counterHz / 2u) / counterHz;
     if (divider16 < 16 || divider16 > 4095)
