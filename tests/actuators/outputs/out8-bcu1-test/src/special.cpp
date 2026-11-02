@@ -908,11 +908,11 @@ TEST_CASE_METHOD(Out8TestFixture, "OUT8 - Logic","[LOGIC]")
 
   // Independent truth-table checks, using the actual object handler. Logical
   // state is separate from normally-open/closed output pin polarity.
-  for (unsigned int mode = 1; mode <= 3; mode++)
+  for (uint32_t mode = 1; mode <= 3; mode++)
   {
-      for (unsigned int order = 0; order < 2; order++)
+      for (uint32_t order = 0; order < 2; order++)
       {
-          for (unsigned int inputs = 0; inputs < 4; inputs++)
+          for (uint32_t inputs = 0; inputs < 4; inputs++)
           {
               INFO("logic mode=" << mode << " order=" << order << " inputs=" << inputs);
               const bool switching = (inputs & 1) != 0;
@@ -946,7 +946,7 @@ TEST_CASE_METHOD(Out8TestFixture, "OUT8 - Logic","[LOGIC]")
                   expected = false;
               }
               REQUIRE(((getRelaysState() >> 2) & 1) == expected);
-              const unsigned int switchingAfter = bcu.comObjects->objectRead(2);
+              const uint32_t switchingAfter = bcu.comObjects->objectRead(2);
               objectUpdated(10); // Repeating the same logic value cannot resurrect a command.
               REQUIRE(((getRelaysState() >> 2) & 1) == expected);
               REQUIRE(bcu.comObjects->objectRead(2) == switchingAfter);
