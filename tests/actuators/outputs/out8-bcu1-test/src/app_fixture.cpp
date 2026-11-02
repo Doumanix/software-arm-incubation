@@ -15,7 +15,7 @@
 
 void resetOut8Application()
 {
-    for (auto& timer : channel_timeout)
+    for (auto& timer: channel_timeout)
     {
         timer.On.stop();
         timer.Off.stop();

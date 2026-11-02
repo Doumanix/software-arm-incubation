@@ -46,8 +46,7 @@ Out8TestFixture::Out8TestFixture()
     auto* bus = bcu.bus;
     auto* callback = bus->callBack;
     bus->~Bus();
-    new (bus) Bus(bcu.addrTables, timer16_1, PIN_EIB_RX, PIN_EIB_TX,
-            CAP0, TIMER_MATCH_MAT0, callback);
+    new (bus) Bus(bcu.addrTables, timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, TIMER_MATCH_MAT0, callback);
     std::memset(bcu.userRam->userRamData, 0, bcu.userRam->sizeTotal + bcu.userRam->shadowSize);
     bcu.userRam->_status = 0;
     bcu.userRam->_runState = 0;
