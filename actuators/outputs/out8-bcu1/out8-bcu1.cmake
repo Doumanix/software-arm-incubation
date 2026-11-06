@@ -7,9 +7,10 @@ set(OUT8_BCU1_SRC
     inc/outputsBiStable.h
     src/app_main.cpp
     src/app_out8.cpp
-    src/cr_startup_lpc11xx.cpp
+    src/libc_stubs.cpp
     src/outputs.cpp
     src/outputsBiStable.cpp
+    src/startup_lpc11xx.cpp
 )
 
 # In MCUXpresso as linked folders src/bus_voltage and src/hand-actuation

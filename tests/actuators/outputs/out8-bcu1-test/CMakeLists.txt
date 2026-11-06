@@ -69,7 +69,7 @@ set(OUT8_TEST_SRC
 )
 
 # Application sources, as in the MCUXpresso project: all sources of the application except the
-# LPC start-up code (src/cr_startup_lpc11xx.cpp), plus the linked folder common/hand-actuation
+# LPC start-up code (src/startup_lpc11xx.cpp, src/libc_stubs.cpp), plus the linked folder common/hand-actuation
 set(OUT8_APP_SRC
     ${OUT8_APP_DIR}/src/app_main.cpp
     ${OUT8_APP_DIR}/src/outputs.cpp
